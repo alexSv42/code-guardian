@@ -1,0 +1,33 @@
+{
+  "name": "code-guardian",
+  "version": "1.0.0",
+  "description": "High-performance Trivy security scanner wrapper with memory-efficient streaming",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:constrained": "node --max-old-space-size=150 dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "bullmq": "^5.30.0",
+    "cors": "^2.8.6",
+    "express": "^4.21.0",
+    "ioredis": "^5.4.0",
+    "stream-chain": "^2.2.5",
+    "stream-json": "^1.8.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "prisma": "^6.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

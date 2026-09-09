@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ScanStatus {
+  Queued
+  Scanning
+  Finished
+  Failed
+}
+
+model Scan {
+  id        String     @id @default(uuid())
+  repoUrl   String
+  status    ScanStatus @default(Queued)
+  error     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  vulnerabilities Vulnerability[]
+}
+
+model Vulnerability {
+  id               Int    @id @default(autoincrement())
+  scanId           String
+  scan             Scan   @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  vulnerabilityId  String
+  pkgName          String
+  severity         String
+  title            String
+  installedVersion String?
+  fixedVersion     String?
+  target           String
+
+  @@index([scanId])
+}
