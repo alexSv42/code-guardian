@@ -6,9 +6,11 @@ const POLL_INTERVAL_MS = 2000;
 
 function App() {
   const [repoUrl, setRepoUrl] = useState("https://github.com/OWASP/NodeGoat");
+  const [lookupId, setLookupId] = useState("");
   const [scanId, setScanId] = useState<string | null>(null);
   const [scan, setScan] = useState<ScanResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -59,12 +61,41 @@ function App() {
       }
       const data: CreateScanResponse = await res.json();
       setScanId(data.scanId);
+      setLookupId(data.scanId);
       setScan({ scanId: data.scanId, status: "Queued", vulnerabilities: [] });
       pollStatus(data.scanId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start scan");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = lookupId.trim();
+    if (!trimmed) return;
+    setError(null);
+    setScan(null);
+    setScanId(null);
+    stopPolling();
+    setLookupLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/scan/${trimmed}`);
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const data: ScanResponse = await res.json();
+      setScanId(data.scanId);
+      setScan(data);
+      if (data.status === "Queued" || data.status === "Scanning") {
+        pollStatus(data.scanId);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Scan not found");
+    } finally {
+      setLookupLoading(false);
     }
   };
 
@@ -113,6 +144,33 @@ function App() {
               }}
             >
               {loading ? "Starting..." : scanId && !isTerminal ? "Scanning..." : "Start Scan"}
+            </button>
+          </div>
+        </form>
+
+        <div style={s.dividerLine} />
+
+        <form onSubmit={handleLookup} style={s.form}>
+          <p style={s.lookupLabel}>Or look up an existing scan by ID</p>
+          <div style={s.inputRow}>
+            <input
+              type="text"
+              value={lookupId}
+              onChange={(e) => setLookupId(e.target.value)}
+              placeholder="e.g. a1b2c3d4-e5f6-..."
+              required
+              style={s.input}
+            />
+            <button
+              type="submit"
+              disabled={lookupLoading}
+              style={{
+                ...s.btn,
+                ...s.btnOutline,
+                ...(lookupLoading ? s.btnDisabled : {}),
+              }}
+            >
+              {lookupLoading ? "Loading..." : "Lookup"}
             </button>
           </div>
         </form>
@@ -312,7 +370,24 @@ const s: Record<string, React.CSSProperties> = {
     whiteSpace: "nowrap" as const,
     transition: "all 0.15s",
   },
+  btnOutline: {
+    backgroundColor: "transparent",
+    color: "#4318FF",
+    border: "1px solid #4318FF",
+  },
   btnDisabled: { opacity: 0.5, cursor: "not-allowed" },
+
+  dividerLine: {
+    width: 120,
+    height: 1,
+    backgroundColor: "#E2E8F0",
+    margin: "20px auto",
+  },
+  lookupLabel: {
+    fontSize: 13,
+    color: "#A0AEC0",
+    marginBottom: 10,
+  },
 
   main: {
     maxWidth: 1120,
